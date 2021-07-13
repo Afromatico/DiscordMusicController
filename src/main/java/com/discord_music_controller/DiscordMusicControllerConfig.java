@@ -1,11 +1,11 @@
-package com.example;
+package com.discord_music_controller;
 
 import net.runelite.client.config.Config;
 import net.runelite.client.config.ConfigGroup;
 import net.runelite.client.config.ConfigItem;
 
 @ConfigGroup("example")
-public interface ExampleConfig extends Config
+public interface DiscordMusicControllerConfig extends Config
 {
 	@ConfigItem(
 		keyName = "greeting",
