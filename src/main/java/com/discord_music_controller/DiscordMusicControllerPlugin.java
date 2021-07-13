@@ -1,53 +1,102 @@
 package com.discord_music_controller;
 
-import com.google.inject.Provides;
+import java.awt.image.BufferedImage;
+import java.util.UUID;
 import javax.inject.Inject;
+
+import com.google.inject.Provides;
 import lombok.extern.slf4j.Slf4j;
-import net.runelite.api.ChatMessageType;
-import net.runelite.api.Client;
-import net.runelite.api.GameState;
-import net.runelite.api.events.GameStateChanged;
+//import net.runelite.api.Client;
+import net.runelite.client.account.AccountSession;
+import net.runelite.client.account.SessionManager;
+//import net.runelite.client.callback.ClientThread;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
+import net.runelite.client.events.ConfigChanged;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
+import net.runelite.client.ui.ClientToolbar;
+import net.runelite.client.ui.NavigationButton;
+import net.runelite.client.util.ImageUtil;
+import net.runelite.client.ws.WSClient;
+
 
 @Slf4j
 @PluginDescriptor(
 	name = "Discord Music Controller"
 )
-public class DiscordMusicControllerPlugin extends Plugin
-{
+public class DiscordMusicControllerPlugin extends Plugin{
+
+	private static final BufferedImage ICON = ImageUtil.loadImageResource(DiscordMusicControllerPlugin.class, "icon.png");
+
 	@Inject
-	private Client client;
+	private ClientToolbar clientToolbar;
 
 	@Inject
 	private DiscordMusicControllerConfig config;
 
-	@Override
-	protected void startUp() throws Exception
-	{
-		log.info("Discord Music Controller started!");
+	@Inject
+	private SessionManager sessionManager;
+
+	@Inject
+	private WSClient wsClient;
+
+	@Provides
+	DiscordMusicControllerConfig provideConfig(ConfigManager configManager){
+		return configManager.getConfig(DiscordMusicControllerConfig.class);
 	}
 
+	private NavigationButton navButton;
+	private boolean addedButton = false;
+
 	@Override
-	protected void shutDown() throws Exception
-	{
-		log.info("Discord Music Controller stopped!");
+	protected void startUp(){
+		DiscordMusicController controllerPanel = new DiscordMusicController(this);
+		navButton = NavigationButton.builder()
+				.tooltip("Music Controller")
+				.icon(ICON)
+				.priority(7)
+				.panel(controllerPanel)
+				.build();
+
+		if (config.alwaysShowIcon()){
+			if (!addedButton){
+				clientToolbar.addNavigation(navButton);
+			}
+		}
+
+		if (!wsClient.sessionExists()){
+			AccountSession accountSession = sessionManager.getAccountSession();
+			// Use the existing account session, if it exists, otherwise generate a new session id
+			UUID uuid = accountSession != null ? accountSession.getUuid() : UUID.randomUUID();
+			wsClient.changeSession(uuid);
+		}
 	}
 
 	@Subscribe
-	public void onGameStateChanged(GameStateChanged gameStateChanged)
-	{
-	/*	if (gameStateChanged.getGameState() == GameState.LOGGED_IN)
-		{
-			client.addChatMessage(ChatMessageType.GAMEMESSAGE, "", "Example says " + config.greeting(), null);
-		}*/
+	protected void onConfigChanged(final ConfigChanged c){
+
+		if (!c.getGroup().equals("music-controller")){
+			return;
+		}
+
+		if (config.alwaysShowIcon()){
+			if (!addedButton){
+				clientToolbar.addNavigation(navButton);
+			}
+		}
+		else{
+			if (addedButton){
+				clientToolbar.removeNavigation(navButton);
+			}
+		}
+
+		addedButton = config.alwaysShowIcon();
 	}
 
-	@Provides
-	DiscordMusicControllerConfig provideConfig(ConfigManager configManager)
-	{
-		return configManager.getConfig(DiscordMusicControllerConfig.class);
+	@Override
+	protected void shutDown(){
+		clientToolbar.removeNavigation(navButton);
 	}
+
 }
