@@ -4,16 +4,15 @@ import net.runelite.client.config.Config;
 import net.runelite.client.config.ConfigGroup;
 import net.runelite.client.config.ConfigItem;
 
-@ConfigGroup("example")
-public interface DiscordMusicControllerConfig extends Config
-{
+@ConfigGroup("music-controller")
+public interface DiscordMusicControllerConfig extends Config{
 	@ConfigItem(
-		keyName = "greeting",
-		name = "Welcome Greeting",
-		description = "The message to show to the user when they login"
+		keyName = "alwaysShowIcon",
+			name = "Always show sidebar",
+			description = "<html>Controls whether the sidebar icon is always shown</html>"
 	)
-	default String greeting()
-	{
-		return "Hello";
+
+	default boolean alwaysShowIcon(){
+		return false;
 	}
 }
